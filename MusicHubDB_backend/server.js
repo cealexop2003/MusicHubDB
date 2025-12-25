@@ -19,6 +19,8 @@ const teachersRoutes = require('./routes/teachers');
 const studentsRoutes = require('./routes/students');
 const instrumentsRoutes = require('./routes/instruments');
 const usersRoutes = require('./routes/users');
+const authRoutes = require('./routes/auth');
+const requestsRoutes = require('./routes/requests');
 
 // Routes
 app.use('/api/musicians', musiciansRoutes);
@@ -28,6 +30,9 @@ app.use('/api/jam-sessions', jamSessionsRoutes);
 app.use('/api/teachers', teachersRoutes);
 app.use('/api/students', studentsRoutes);
 app.use('/api/instruments', instrumentsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/requests', requestsRoutes);
 app.use('/api/users', usersRoutes);
 
 // Health check

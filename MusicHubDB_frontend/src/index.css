@@ -124,6 +124,43 @@ code {
   margin-top: 0.5rem;
 }
 
+/* Request Status Badges */
+.badge-pending {
+  display: inline-block;
+  background: #ff9800;
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+}
+
+.badge-approved {
+  display: inline-block;
+  background: #4CAF50;
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+}
+
+.badge-rejected {
+  display: inline-block;
+  background: #f44336;
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+}
+
 /* Page Header */
 .page-header {
   background: white;
