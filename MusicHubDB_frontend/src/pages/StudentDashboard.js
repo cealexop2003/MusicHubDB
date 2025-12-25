@@ -49,9 +49,10 @@ function StudentDashboard() {
       } else {
         await requestLesson({ teacher_id: teacherId, student_id: currentUser.id });
       }
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Failed to toggle request:', err);
+      await fetchData();
     }
   };
 
@@ -63,9 +64,10 @@ function StudentDashboard() {
       } else {
         await showConcertInterest({ concert_id: concertId, user_id: currentUser.id });
       }
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Failed to toggle interest:', err);
+      await fetchData();
     }
   };
 
@@ -203,11 +205,11 @@ function StudentDashboard() {
       {/* My Requests Tab */}
       {activeTab === 'my-requests' && (
         <div>
-          <h2>My Requests</h2>
+          <h2 style={{ color: 'white', marginBottom: '20px' }}>My Requests</h2>
           
           {myRequests.lessons.length > 0 && (
             <>
-              <h3 style={{ marginTop: '30px' }}>Lesson Requests</h3>
+              <h3 style={{ marginTop: '30px', color: 'white' }}>Lesson Requests</h3>
               <div className="card-grid">
                 {myRequests.lessons.map(req => (
                   <div key={req.request_id} className="card">
@@ -224,7 +226,7 @@ function StudentDashboard() {
 
           {myRequests.concerts.length > 0 && (
             <>
-              <h3 style={{ marginTop: '30px' }}>Concert Interests</h3>
+              <h3 style={{ marginTop: '30px', color: 'white' }}>Concert Interests</h3>
               <div className="card-grid">
                 {myRequests.concerts.map(req => (
                   <div key={req.interest_id} className="card">
@@ -238,7 +240,7 @@ function StudentDashboard() {
           )}
 
           {myRequests.lessons.length === 0 && myRequests.concerts.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#666', marginTop: '50px' }}>You haven't made any requests yet.</p>
+            <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginTop: '80px', fontSize: '18px' }}>You haven't made any requests yet.</p>
           )}
         </div>
       )}

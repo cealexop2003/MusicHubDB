@@ -47,9 +47,10 @@ function TeacherDashboard() {
   const handleApproveLesson = async (requestId, status) => {
     try {
       await approveLessonRequest(requestId, status);
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Failed to update request:', err);
+      await fetchData();
     }
   };
 
@@ -61,9 +62,10 @@ function TeacherDashboard() {
       } else {
         await showConcertInterest({ concert_id: concertId, user_id: currentUser.id });
       }
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Failed to toggle interest:', err);
+      await fetchData();
     }
   };
 

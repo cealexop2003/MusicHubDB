@@ -55,9 +55,11 @@ function MusicianDashboard() {
       } else {
         await requestJamSession({ jam_id: jamId, musician_id: currentUser.id });
       }
-      fetchData(); // Refresh data
+      await fetchData(); // Refresh data
     } catch (err) {
       console.error('Failed to toggle request:', err);
+      // Still refresh to get current state
+      await fetchData();
     }
   };
 
@@ -69,9 +71,10 @@ function MusicianDashboard() {
       } else {
         await requestBand({ band_id: bandId, musician_id: currentUser.id });
       }
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Failed to toggle request:', err);
+      await fetchData();
     }
   };
 
@@ -83,14 +86,15 @@ function MusicianDashboard() {
       } else {
         await showConcertInterest({ concert_id: concertId, user_id: currentUser.id });
       }
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Failed to toggle interest:', err);
+      await fetchData();
     }
   };
 
   const hasRequested = (type, id) => {
-    if (type === 'jam') {
+    if (type === 'jam-session' || type === 'jam') {
       return myRequests.jamSessions?.some(r => r.jam_id === id && r.status === 'pending') || false;
     } else if (type === 'band') {
       return myRequests.bands?.some(r => r.band_id === id && r.status === 'pending') || false;
@@ -268,11 +272,11 @@ function MusicianDashboard() {
       {/* My Requests Tab */}
       {activeTab === 'my-requests' && (
         <div>
-          <h2>My Requests</h2>
+          <h2 style={{ color: 'white', marginBottom: '20px' }}>My Requests</h2>
           
           {myRequests.jamSessions.length > 0 && (
             <>
-              <h3 style={{ marginTop: '30px' }}>Jam Session Requests</h3>
+              <h3 style={{ marginTop: '30px', color: 'white' }}>Jam Session Requests</h3>
               <div className="card-grid">
                 {myRequests.jamSessions.map(req => (
                   <div key={req.request_id} className="card">
@@ -290,7 +294,7 @@ function MusicianDashboard() {
 
           {myRequests.bands.length > 0 && (
             <>
-              <h3 style={{ marginTop: '30px' }}>Band Requests</h3>
+              <h3 style={{ marginTop: '30px', color: 'white' }}>Band Requests</h3>
               <div className="card-grid">
                 {myRequests.bands.map(req => (
                   <div key={req.request_id} className="card">
@@ -307,7 +311,7 @@ function MusicianDashboard() {
 
           {myRequests.concerts.length > 0 && (
             <>
-              <h3 style={{ marginTop: '30px' }}>Concert Interests</h3>
+              <h3 style={{ marginTop: '30px', color: 'white' }}>Concert Interests</h3>
               <div className="card-grid">
                 {myRequests.concerts.map(req => (
                   <div key={req.interest_id} className="card">
@@ -321,7 +325,7 @@ function MusicianDashboard() {
           )}
 
           {myRequests.jamSessions.length === 0 && myRequests.bands.length === 0 && myRequests.concerts.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#666', marginTop: '50px' }}>You haven't made any requests yet.</p>
+            <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginTop: '80px', fontSize: '18px' }}>You haven't made any requests yet.</p>
           )}
         </div>
       )}

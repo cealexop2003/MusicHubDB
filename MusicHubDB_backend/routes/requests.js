@@ -54,6 +54,15 @@ router.get('/my-requests/:userId', (req, res) => {
 router.post('/jam-session', (req, res) => {
   const { jam_id, musician_id } = req.body;
 
+  // Check if request already exists
+  const existingRequest = jamSessionRequests.find(
+    r => r.jam_id === parseInt(jam_id) && r.musician_id === parseInt(musician_id) && r.status === 'pending'
+  );
+
+  if (existingRequest) {
+    return res.status(400).json({ error: 'Request already exists' });
+  }
+
   const newRequest = {
     request_id: jamSessionRequests.length + 1,
     jam_id: parseInt(jam_id),
@@ -86,6 +95,15 @@ router.delete('/jam-session/:musicianId/:jamId', (req, res) => {
 // Request to join band
 router.post('/band', (req, res) => {
   const { band_id, musician_id } = req.body;
+
+  // Check if request already exists
+  const existingRequest = bandRequests.find(
+    r => r.band_id === parseInt(band_id) && r.musician_id === parseInt(musician_id) && r.status === 'pending'
+  );
+
+  if (existingRequest) {
+    return res.status(400).json({ error: 'Request already exists' });
+  }
 
   const newRequest = {
     request_id: bandRequests.length + 1,
@@ -120,6 +138,15 @@ router.delete('/band/:musicianId/:bandId', (req, res) => {
 router.post('/lesson', (req, res) => {
   const { teacher_id, student_id } = req.body;
 
+  // Check if request already exists
+  const existingRequest = lessonRequests.find(
+    r => r.teacher_id === parseInt(teacher_id) && r.student_id === parseInt(student_id) && r.status === 'pending'
+  );
+
+  if (existingRequest) {
+    return res.status(400).json({ error: 'Request already exists' });
+  }
+
   const newRequest = {
     request_id: lessonRequests.length + 1,
     teacher_id: parseInt(teacher_id),
@@ -152,6 +179,15 @@ router.delete('/lesson/:studentId/:teacherId', (req, res) => {
 // Show interest in concert
 router.post('/concert', (req, res) => {
   const { concert_id, user_id } = req.body;
+
+  // Check if interest already exists
+  const existingInterest = concertInterests.find(
+    i => i.concert_id === parseInt(concert_id) && i.user_id === parseInt(user_id)
+  );
+
+  if (existingInterest) {
+    return res.status(400).json({ error: 'Interest already registered' });
+  }
 
   const newInterest = {
     interest_id: concertInterests.length + 1,
