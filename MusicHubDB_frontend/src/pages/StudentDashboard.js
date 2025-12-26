@@ -6,8 +6,8 @@ import {
   getMyRequests,
   requestLesson,
   cancelLessonRequest,
-  showConcertInterest,
-  removeConcertInterest
+  getUserInstrument,
+  updateUserInstrument
 } from '../services/api';
 
 function StudentDashboard() {
@@ -17,6 +17,9 @@ function StudentDashboard() {
   const [concerts, setConcerts] = useState([]);
   const [myRequests, setMyRequests] = useState({ lessons: [], concerts: [] });
   const [loading, setLoading] = useState(true);
+  const [instrument, setInstrument] = useState({ type: '', name: '' });
+  const [originalInstrument, setOriginalInstrument] = useState({ type: '', name: '' });
+  const [profileSaved, setProfileSaved] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -25,15 +28,21 @@ function StudentDashboard() {
 
   const fetchData = async () => {
     try {
-      const [teachersRes, concertsRes, requestsRes] = await Promise.all([
+      const [teachersRes, concertsRes, requestsRes, instrumentRes] = await Promise.all([
         getTeachers(),
         getConcerts(),
-        getMyRequests(currentUser.id)
+        getMyRequests(currentUser.id),
+        getUserInstrument(currentUser.id)
       ]);
       
       setTeachers(teachersRes.data);
       setConcerts(concertsRes.data);
       setMyRequests(requestsRes.data);
+      
+      if (instrumentRes.data) {
+        setInstrument({ type: instrumentRes.data.type || '', name: instrumentRes.data.name || '' });
+        setOriginalInstrument({ type: instrumentRes.data.type || '', name: instrumentRes.data.name || '' });
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -56,30 +65,34 @@ function StudentDashboard() {
     }
   };
 
-  const handleShowConcertInterest = async (concertId) => {
-    try {
-      const hasInterest = hasRequested('concert', concertId);
-      if (hasInterest) {
-        await removeConcertInterest(currentUser.id, concertId);
-      } else {
-        await showConcertInterest({ concert_id: concertId, user_id: currentUser.id });
-      }
-      await fetchData();
-    } catch (err) {
-      console.error('Failed to toggle interest:', err);
-      await fetchData();
-    }
-  };
-
   const hasRequested = (type, id) => {
     if (type === 'lesson' || type === 'teacher') {
       return myRequests.lessons?.some(r => r.teacher_id === id) || false;
-    } else if (type === 'concert') {
-      // Check if user's concert_id matches this concert
-      return currentUser.concert_id === id;
     }
     return false;
   };
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateUserInstrument(currentUser.id, { type: instrument.type, name: instrument.name });
+      setOriginalInstrument({ ...instrument });
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+    }
+  };
+
+  const instrumentTypes = ['strings', 'brass', 'woodwinds', 'percussion'];
+  
+  const instrumentsByType = {
+    strings: ['classical_guitar', 'acoustic_guitar', 'electric_guitar', 'bass', 'violin', 'viola', 'cello', 'double_bass', 'harp', 'banjo', 'lyre', 'piano'],
+    brass: ['trumpet', 'french_horn', 'tuba', 'trombone'],
+    woodwinds: ['bassoon', 'clarinet', 'flute', 'recorder', 'piccolo', 'oboe', 'saxophone'],
+    percussion: ['drums', 'xylophone', 'metallophone', 'accordion']
+  };
+  
+  const availableInstruments = instrument.type ? instrumentsByType[instrument.type] : [];
 
   if (loading) return <div className="loading">Loading...</div>;
 
@@ -123,19 +136,19 @@ function StudentDashboard() {
           Concerts
         </button>
         <button
-          onClick={() => setActiveTab('my-requests')}
+          onClick={() => setActiveTab('profile')}
           style={{
             padding: '15px 30px',
             border: 'none',
             backgroundColor: 'transparent',
-            color: activeTab === 'my-requests' ? 'white' : 'rgba(255,255,255,0.6)',
-            fontWeight: activeTab === 'my-requests' ? 'bold' : 'normal',
+            color: activeTab === 'profile' ? 'white' : 'rgba(255,255,255,0.6)',
+            fontWeight: activeTab === 'profile' ? 'bold' : 'normal',
             cursor: 'pointer',
-            borderBottom: activeTab === 'my-requests' ? '3px solid white' : '3px solid transparent',
+            borderBottom: activeTab === 'profile' ? '3px solid white' : '3px solid transparent',
             marginBottom: '-3px'
           }}
         >
-          My Requests
+          Edit Profile
         </button>
       </div>
 
@@ -182,67 +195,85 @@ function StudentDashboard() {
               <p><strong>Location:</strong> {concert.address}</p>
               <p><strong>Price:</strong> €{concert.price}</p>
               <span className="badge">{concert.genre}</span>
-              <button 
-                onClick={() => handleShowConcertInterest(concert.concert_id)}
-                style={{ 
-                  backgroundColor: hasRequested('concert', concert.concert_id) ? '#ccc' : '#667eea', 
-                  color: 'white', 
-                  padding: '10px', 
-                  border: 'none', 
-                  borderRadius: '5px', 
-                  cursor: 'pointer', 
-                  width: '100%', 
-                  fontWeight: 'bold', 
-                  marginTop: '10px' 
-                }}
-              >
-                {hasRequested('concert', concert.concert_id) ? 'Interest Shown' : 'Show Interest'}
-              </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* My Requests Tab */}
-      {activeTab === 'my-requests' && (
-        <div>
-          <h2 style={{ color: 'white', marginBottom: '20px' }}>My Requests</h2>
-          
-          {myRequests.lessons.length > 0 && (
-            <>
-              <h3 style={{ marginTop: '30px', color: 'white' }}>Lesson Requests</h3>
-              <div className="card-grid">
-                {myRequests.lessons.map(req => (
-                  <div key={req.request_id} className="card">
-                    <h4>Teacher: {req.teacher?.name}</h4>
-                    <p><strong>Requested on:</strong> {req.created_at}</p>
-                    <span className={`badge ${req.status === 'pending' ? 'badge-pending' : req.status === 'approved' ? 'badge-approved' : 'badge-rejected'}`}>
-                      {req.status}
-                    </span>
-                  </div>
-                ))}
+      {/* Edit Profile Tab */}
+      {activeTab === 'profile' && (
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <div className="card">
+            <h2>Edit Your Instrument Profile</h2>
+            <div style={{ marginTop: '20px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                  Instrument Type:
+                </label>
+                <select
+                  value={instrument.type}
+                  onChange={(e) => setInstrument({ type: e.target.value, name: '' })}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontSize: '16px',
+                    borderRadius: '5px',
+                    border: '2px solid #000',
+                    backgroundColor: 'white',
+                    color: '#000'
+                  }}
+                >
+                  <option value="">Select Type</option>
+                  {instrumentTypes.map(type => (
+                    <option key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </>
-          )}
 
-          {myRequests.concerts.length > 0 && (
-            <>
-              <h3 style={{ marginTop: '30px', color: 'white' }}>Concert Interests</h3>
-              <div className="card-grid">
-                {myRequests.concerts.map(req => (
-                  <div key={req.interest_id} className="card">
-                    <h4>{req.details?.name}</h4>
-                    <p><strong>Date:</strong> {req.details?.date}</p>
-                    <p><strong>Artist:</strong> {req.details?.artist}</p>
-                  </div>
-                ))}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                  Instrument Name:
+                </label>
+                <input
+                  type="text"
+                  value={instrument.name}
+                  onChange={(e) => setInstrument({ ...instrument, name: e.target.value })}
+                  disabled={!instrument.type}
+                  placeholder="Enter instrument name"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontSize: '16px',
+                    borderRadius: '5px',
+                    border: '2px solid #000',
+                    backgroundColor: !instrument.type ? '#e0e0e0' : 'white',
+                    color: !instrument.type ? '#999' : '#000',
+                    cursor: !instrument.type ? 'not-allowed' : 'text'
+                  }}
+                />
               </div>
-            </>
-          )}
 
-          {myRequests.lessons.length === 0 && myRequests.concerts.length === 0 && (
-            <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginTop: '80px', fontSize: '18px' }}>You haven't made any requests yet.</p>
-          )}
+              <button
+                onClick={handleSaveProfile}
+                disabled={!instrument.type || !instrument.name || profileSaved}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  backgroundColor: profileSaved ? '#ccc' : (!instrument.type || !instrument.name) ? '#ccc' : '#667eea',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: (!instrument.type || !instrument.name || profileSaved) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {profileSaved ? 'Profile Saved' : 'Save Profile'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

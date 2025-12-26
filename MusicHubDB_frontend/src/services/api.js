@@ -36,6 +36,8 @@ export const getStudent = (id) => api.get(`/students/${id}`);
 // Instruments
 export const getInstruments = () => api.get('/instruments');
 export const getInstrument = (id) => api.get(`/instruments/${id}`);
+export const getUserInstrument = (userId) => api.get(`/instruments/user/${userId}`);
+export const updateUserInstrument = (userId, data) => api.put(`/instruments/user/${userId}`, data);
 
 // Users
 export const getUsers = () => api.get('/users');
@@ -53,6 +55,7 @@ export const requestBand = (data) => api.post('/requests/band', data);
 export const cancelBandRequest = (musicianId, bandId) => api.delete(`/requests/band/${musicianId}/${bandId}`);
 export const requestLesson = (data) => api.post('/requests/lesson', data);
 export const cancelLessonRequest = (studentId, teacherId) => api.delete(`/requests/lesson/${studentId}/${teacherId}`);
+export const updateLessonDetails = (lessonId, data) => api.put(`/requests/lesson/${lessonId}`, data);
 export const showConcertInterest = (data) => api.post('/requests/concert', data);
 export const removeConcertInterest = (userId, concertId) => api.delete(`/requests/concert/${userId}/${concertId}`);
 export const approveJamRequest = (requestId, status) => api.put(`/requests/jam-session/${requestId}`, { status });

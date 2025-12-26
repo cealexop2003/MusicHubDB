@@ -71,4 +71,49 @@ router.delete('/:id', (req, res) => {
   res.json({ message: 'Instrument deleted (mock)', id: req.params.id });
 });
 
+// GET instrument by user_id
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const [instruments] = await db.query('SELECT * FROM Instrument WHERE user_id = ?', [userId]);
+    res.json(instruments[0] || null);
+  } catch (error) {
+    console.error('Error fetching user instrument:', error);
+    res.status(500).json({ error: 'Failed to fetch user instrument' });
+  }
+});
+
+// Update or create instrument for user
+router.put('/user/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const { type, name } = req.body;
+
+    // Check if instrument exists for this user
+    const [existing] = await db.query('SELECT * FROM Instrument WHERE user_id = ?', [userId]);
+
+    if (existing.length > 0) {
+      // Update existing
+      await db.query(
+        'UPDATE Instrument SET type = ?, name = ? WHERE user_id = ?',
+        [type, name, userId]
+      );
+    } else {
+      // Insert new
+      const [maxResult] = await db.query('SELECT MAX(instrument_id) as max_id FROM Instrument');
+      const instrument_id = (maxResult[0].max_id || 0) + 1;
+      
+      await db.query(
+        'INSERT INTO Instrument (instrument_id, user_id, type, name) VALUES (?, ?, ?, ?)',
+        [instrument_id, userId, type, name]
+      );
+    }
+
+    res.json({ message: 'Instrument updated successfully' });
+  } catch (error) {
+    console.error('Error updating instrument:', error);
+    res.status(500).json({ error: 'Failed to update instrument' });
+  }
+});
+
 module.exports = router;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
-  getJamSessions, 
+  getJamSessions,
+  getJamSession,
   getBands, 
   getConcerts, 
   getMyRequests,
@@ -21,6 +22,8 @@ function MusicianDashboard() {
   const [concerts, setConcerts] = useState([]);
   const [myRequests, setMyRequests] = useState({ jamSessions: [], bands: [], concerts: [] });
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedJamSession, setSelectedJamSession] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -89,6 +92,21 @@ function MusicianDashboard() {
     return false; // No concert or lesson tracking
   };
 
+  const handleViewJamSession = async (jamId) => {
+    try {
+      const response = await getJamSession(jamId);
+      setSelectedJamSession(response.data);
+      setShowModal(true);
+    } catch (err) {
+      console.error('Failed to fetch jam session details:', err);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedJamSession(null);
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
 
   return (
@@ -145,35 +163,30 @@ function MusicianDashboard() {
         >
           Concerts
         </button>
-        <button
-          onClick={() => setActiveTab('my-requests')}
-          style={{
-            padding: '15px 30px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            color: activeTab === 'my-requests' ? 'white' : 'rgba(255,255,255,0.6)',
-            fontWeight: activeTab === 'my-requests' ? 'bold' : 'normal',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'my-requests' ? '3px solid white' : '3px solid transparent',
-            marginBottom: '-3px'
-          }}
-        >
-          My Requests
-        </button>
       </div>
 
       {/* Jam Sessions Tab */}
       {activeTab === 'jam-sessions' && (
         <div className="card-grid">
           {jamSessions.map(session => (
-            <div key={session.jam_id} className="card">
+            <div 
+              key={session.jam_id} 
+              className="card"
+              style={{ cursor: 'pointer', position: 'relative' }}
+              onClick={() => handleViewJamSession(session.jam_id)}
+            >
+              <div style={{ position: 'absolute', top: '2px', right: '5px', fontSize: '32px', color: '#667eea', fontWeight: 'bold' }}>
+                ⤢
+              </div>
               <h3>{session.genre} Jam Session</h3>
               <p><strong>Date:</strong> {session.date}</p>
               <p><strong>Time:</strong> {session.start_time} - {session.end_time}</p>
               <p><strong>Location:</strong> {session.address}</p>
-              <p><strong>Participants:</strong> {session.participants?.length || 0} musicians</p>
               <button 
-                onClick={() => handleJoinJamSession(session.jam_id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleJoinJamSession(session.jam_id);
+                }}
                 style={{ 
                   backgroundColor: hasRequested('jam-session', session.jam_id) ? '#ccc' : '#667eea', 
                   color: 'white', 
@@ -185,7 +198,7 @@ function MusicianDashboard() {
                   fontWeight: 'bold' 
                 }}
               >
-                {hasRequested('jam-session', session.jam_id) ? 'Request Sent' : 'Request to Join'}
+                {hasRequested('jam-session', session.jam_id) ? 'Leave Jam' : 'Join Jam'}
               </button>
             </div>
           ))}
@@ -200,7 +213,7 @@ function MusicianDashboard() {
               <h3>{band.name}</h3>
               <p><strong>Genre:</strong> {band.genre}</p>
               <p><strong>Formed:</strong> {band.creation_date}</p>
-              <p><strong>Members:</strong> {band.members_count}</p>
+              <p><strong>Members:</strong> {band['members#']}</p>
               <button 
                 onClick={() => handleJoinBand(band.band_id)}
                 style={{ 
@@ -214,7 +227,7 @@ function MusicianDashboard() {
                   fontWeight: 'bold' 
                 }}
               >
-                {hasRequested('band', band.band_id) ? 'Request Sent' : 'Request to Join'}
+                {hasRequested('band', band.band_id) ? 'Leave Band' : 'Join Band'}
               </button>
             </div>
           ))}
@@ -296,6 +309,100 @@ function MusicianDashboard() {
           {myRequests.jamSessions.length === 0 && myRequests.bands.length === 0 && myRequests.concerts.length === 0 && (
             <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginTop: '80px', fontSize: '18px' }}>You haven't made any requests yet.</p>
           )}
+        </div>
+      )}
+
+      {/* Modal for Jam Session Participants */}
+      {showModal && selectedJamSession && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}
+          onClick={closeModal}
+        >
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              padding: '30px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeModal}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#333'
+              }}
+            >
+              ×
+            </button>
+            
+            <h2 style={{ color: '#333', marginBottom: '20px' }}>
+              {selectedJamSession.genre} Jam Session
+            </h2>
+            
+            <div style={{ marginBottom: '20px', color: '#666' }}>
+              <p><strong>Date:</strong> {selectedJamSession.date}</p>
+              <p><strong>Time:</strong> {selectedJamSession.start_time} - {selectedJamSession.end_time}</p>
+              <p><strong>Location:</strong> {selectedJamSession.address}</p>
+            </div>
+
+            <h3 style={{ color: '#333', marginBottom: '15px' }}>
+              Participants ({selectedJamSession.participants?.length || 0})
+            </h3>
+
+            {selectedJamSession.participants && selectedJamSession.participants.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {selectedJamSession.participants.map(participant => (
+                  <div 
+                    key={participant.user_id}
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: '8px',
+                      borderLeft: '4px solid #667eea'
+                    }}
+                  >
+                    <h4 style={{ margin: '0 0 5px 0', color: '#333' }}>
+                      {participant.name}
+                    </h4>
+                    <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+                      <strong>Age:</strong> {participant.age}
+                    </p>
+                    <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+                      <strong>Experience:</strong> {participant.experience} years
+                    </p>
+                    <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+                      <strong>Genre:</strong> {participant.genre}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: '#666', textAlign: 'center' }}>No participants yet</p>
+            )}
+          </div>
         </div>
       )}
     </div>

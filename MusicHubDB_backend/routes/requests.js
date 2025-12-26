@@ -202,6 +202,28 @@ router.post('/lesson', async (req, res) => {
   }
 });
 
+// Update lesson details
+router.put('/lesson/:lessonId', async (req, res) => {
+  try {
+    const lessonId = parseInt(req.params.lessonId);
+    const { lesson_format, address, instrument, start_time, end_time, date, price } = req.body;
+
+    const [result] = await db.query(
+      'UPDATE Teachers_Give_Lessons_to_Students SET lesson_format = ?, address = ?, instrument = ?, start_time = ?, end_time = ?, date = ?, price = ? WHERE lesson_id = ?',
+      [lesson_format, address, instrument, start_time, end_time, date, price, lessonId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    res.json({ message: 'Lesson updated successfully' });
+  } catch (error) {
+    console.error('Error updating lesson:', error);
+    res.status(500).json({ error: 'Failed to update lesson' });
+  }
+});
+
 // Cancel lesson
 router.delete('/lesson/:studentId/:teacherId', async (req, res) => {
   try {
