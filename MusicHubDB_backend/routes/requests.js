@@ -1,277 +1,261 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  jamSessionRequests, 
-  bandRequests, 
-  lessonRequests, 
-  concertInterests,
-  jamSessions,
-  bands,
-  concerts,
-  users,
-  teachers,
-  students
-} = require('../data/mockData');
+const db = require('../config/db');
 
 // Get all requests for a user
-router.get('/my-requests/:userId', (req, res) => {
-  const userId = parseInt(req.params.userId);
+router.get('/my-requests/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
 
-  const myJamRequests = jamSessionRequests.filter(r => r.musician_id === userId).map(r => ({
-    ...r,
-    type: 'jam-session',
-    details: jamSessions.find(j => j.jam_id === r.jam_id)
-  }));
+    // Get jam sessions musician has joined
+    const [jamSessions] = await db.query(`
+      SELECT js.jam_id, js.date, js.address, js.genre, js.start_time, js.end_time, js.\`participants#\`
+      FROM \`Jam-Sessions_Have_Musicians\` jshm
+      JOIN \`Jam-Session\` js ON jshm.jam_id = js.jam_id
+      WHERE jshm.musician_id = ?
+    `, [userId]);
 
-  const myBandRequests = bandRequests.filter(r => r.musician_id === userId).map(r => ({
-    ...r,
-    type: 'band',
-    details: bands.find(b => b.band_id === r.band_id)
-  }));
+    // Get bands musician has joined
+    const [bands] = await db.query(`
+      SELECT b.band_id, b.name, b.creation_date, b.genre, b.\`members#\`
+      FROM \`Bands_Have_Musicians\` bhm
+      JOIN Band b ON bhm.band_id = b.band_id
+      WHERE bhm.musician_id = ?
+    `, [userId]);
 
-  const myLessonRequests = lessonRequests.filter(r => r.student_id === userId || r.teacher_id === userId).map(r => ({
-    ...r,
-    type: 'lesson',
-    teacher: users.find(u => u.user_id === r.teacher_id),
-    student: users.find(u => u.user_id === r.student_id)
-  }));
+    // Get lessons (as student or teacher)
+    const [lessons] = await db.query(`
+      SELECT tgls.*, 
+             student.name as student_name, teacher.name as teacher_name
+      FROM Teachers_Give_Lessons_to_Students tgls
+      LEFT JOIN User student ON tgls.student_id = student.user_id
+      LEFT JOIN User teacher ON tgls.teacher_id = teacher.user_id
+      WHERE tgls.student_id = ? OR tgls.teacher_id = ?
+    `, [userId, userId]);
 
-  const myConcertInterests = concertInterests.filter(r => r.user_id === userId).map(r => ({
-    ...r,
-    type: 'concert',
-    details: concerts.find(c => c.concert_id === r.concert_id)
-  }));
-
-  res.json({
-    jamSessions: myJamRequests,
-    bands: myBandRequests,
-    lessons: myLessonRequests,
-    concerts: myConcertInterests
-  });
-});
-
-// Request to join jam session
-router.post('/jam-session', (req, res) => {
-  const { jam_id, musician_id } = req.body;
-
-  // Check if request already exists
-  const existingRequest = jamSessionRequests.find(
-    r => r.jam_id === parseInt(jam_id) && r.musician_id === parseInt(musician_id) && r.status === 'pending'
-  );
-
-  if (existingRequest) {
-    return res.status(400).json({ error: 'Request already exists' });
+    res.json({
+      jamSessions: jamSessions.map(r => ({ ...r, type: 'jam-session' })),
+      bands: bands.map(r => ({ ...r, type: 'band' })),
+      lessons: lessons.map(r => ({ ...r, type: 'lesson' })),
+      concerts: [] // No concert tracking in database
+    });
+  } catch (error) {
+    console.error('Error fetching user requests:', error);
+    res.status(500).json({ error: 'Failed to fetch requests' });
   }
-
-  const newRequest = {
-    request_id: jamSessionRequests.length + 1,
-    jam_id: parseInt(jam_id),
-    musician_id: parseInt(musician_id),
-    status: 'pending',
-    created_at: new Date().toISOString().split('T')[0]
-  };
-
-  jamSessionRequests.push(newRequest);
-  res.json(newRequest);
 });
 
-// Cancel jam session request
-router.delete('/jam-session/:musicianId/:jamId', (req, res) => {
-  const musicianId = parseInt(req.params.musicianId);
-  const jamId = parseInt(req.params.jamId);
+// Request to join jam session (adds to Jam-Sessions_Have_Musicians)
+router.post('/jam-session', async (req, res) => {
+  try {
+    const { jam_id, musician_id } = req.body;
 
-  const index = jamSessionRequests.findIndex(
-    r => r.musician_id === musicianId && r.jam_id === jamId && r.status === 'pending'
-  );
+    // Check if musician already joined
+    const [existing] = await db.query(
+      'SELECT * FROM `Jam-Sessions_Have_Musicians` WHERE jam_id = ? AND musician_id = ?',
+      [parseInt(jam_id), parseInt(musician_id)]
+    );
 
-  if (index === -1) {
-    return res.status(404).json({ error: 'Request not found' });
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Already joined this jam session' });
+    }
+
+    // Add musician to jam session
+    await db.query(
+      'INSERT INTO `Jam-Sessions_Have_Musicians` (jam_id, musician_id) VALUES (?, ?)',
+      [parseInt(jam_id), parseInt(musician_id)]
+    );
+
+    // Increment participants count
+    await db.query(
+      'UPDATE `Jam-Session` SET `participants#` = `participants#` + 1 WHERE jam_id = ?',
+      [parseInt(jam_id)]
+    );
+
+    res.json({ message: 'Joined jam session' });
+  } catch (error) {
+    console.error('Error joining jam session:', error);
+    res.status(500).json({ error: 'Failed to join jam session' });
   }
-
-  jamSessionRequests.splice(index, 1);
-  res.json({ message: 'Request cancelled' });
 });
 
-// Request to join band
-router.post('/band', (req, res) => {
-  const { band_id, musician_id } = req.body;
+// Leave jam session
+router.delete('/jam-session/:musicianId/:jamId', async (req, res) => {
+  try {
+    const musicianId = parseInt(req.params.musicianId);
+    const jamId = parseInt(req.params.jamId);
 
-  // Check if request already exists
-  const existingRequest = bandRequests.find(
-    r => r.band_id === parseInt(band_id) && r.musician_id === parseInt(musician_id) && r.status === 'pending'
-  );
+    const [result] = await db.query(
+      'DELETE FROM `Jam-Sessions_Have_Musicians` WHERE musician_id = ? AND jam_id = ?',
+      [musicianId, jamId]
+    );
 
-  if (existingRequest) {
-    return res.status(400).json({ error: 'Request already exists' });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Not in this jam session' });
+    }
+
+    // Decrement participants count
+    await db.query(
+      'UPDATE `Jam-Session` SET `participants#` = `participants#` - 1 WHERE jam_id = ?',
+      [jamId]
+    );
+
+    res.json({ message: 'Left jam session' });
+  } catch (error) {
+    console.error('Error leaving jam session:', error);
+    res.status(500).json({ error: 'Failed to leave jam session' });
   }
-
-  const newRequest = {
-    request_id: bandRequests.length + 1,
-    band_id: parseInt(band_id),
-    musician_id: parseInt(musician_id),
-    status: 'pending',
-    created_at: new Date().toISOString().split('T')[0]
-  };
-
-  bandRequests.push(newRequest);
-  res.json(newRequest);
 });
 
-// Cancel band request
-router.delete('/band/:musicianId/:bandId', (req, res) => {
-  const musicianId = parseInt(req.params.musicianId);
-  const bandId = parseInt(req.params.bandId);
+// Request to join band (adds to Bands_Have_Musicians)
+router.post('/band', async (req, res) => {
+  try {
+    const { band_id, musician_id } = req.body;
 
-  const index = bandRequests.findIndex(
-    r => r.musician_id === musicianId && r.band_id === bandId && r.status === 'pending'
-  );
+    // Check if musician already in band
+    const [existing] = await db.query(
+      'SELECT * FROM `Bands_Have_Musicians` WHERE band_id = ? AND musician_id = ?',
+      [parseInt(band_id), parseInt(musician_id)]
+    );
 
-  if (index === -1) {
-    return res.status(404).json({ error: 'Request not found' });
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Already in this band' });
+    }
+
+    // Add musician to band
+    await db.query(
+      'INSERT INTO `Bands_Have_Musicians` (band_id, musician_id) VALUES (?, ?)',
+      [parseInt(band_id), parseInt(musician_id)]
+    );
+
+    // Increment members count
+    await db.query(
+      'UPDATE Band SET `members#` = `members#` + 1 WHERE band_id = ?',
+      [parseInt(band_id)]
+    );
+
+    res.json({ message: 'Joined band' });
+  } catch (error) {
+    console.error('Error joining band:', error);
+    res.status(500).json({ error: 'Failed to join band' });
   }
-
-  bandRequests.splice(index, 1);
-  res.json({ message: 'Request cancelled' });
 });
 
-// Request lesson (from student)
-router.post('/lesson', (req, res) => {
-  const { teacher_id, student_id } = req.body;
+// Leave band
+router.delete('/band/:musicianId/:bandId', async (req, res) => {
+  try {
+    const musicianId = parseInt(req.params.musicianId);
+    const bandId = parseInt(req.params.bandId);
 
-  // Check if request already exists
-  const existingRequest = lessonRequests.find(
-    r => r.teacher_id === parseInt(teacher_id) && r.student_id === parseInt(student_id) && r.status === 'pending'
-  );
+    const [result] = await db.query(
+      'DELETE FROM `Bands_Have_Musicians` WHERE musician_id = ? AND band_id = ?',
+      [musicianId, bandId]
+    );
 
-  if (existingRequest) {
-    return res.status(400).json({ error: 'Request already exists' });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Not in this band' });
+    }
+
+    // Decrement members count
+    await db.query(
+      'UPDATE Band SET `members#` = `members#` - 1 WHERE band_id = ?',
+      [bandId]
+    );
+
+    res.json({ message: 'Left band' });
+  } catch (error) {
+    console.error('Error leaving band:', error);
+    res.status(500).json({ error: 'Failed to leave band' });
   }
-
-  const newRequest = {
-    request_id: lessonRequests.length + 1,
-    teacher_id: parseInt(teacher_id),
-    student_id: parseInt(student_id),
-    status: 'pending',
-    created_at: new Date().toISOString().split('T')[0]
-  };
-
-  lessonRequests.push(newRequest);
-  res.json(newRequest);
 });
 
-// Cancel lesson request
-router.delete('/lesson/:studentId/:teacherId', (req, res) => {
-  const studentId = parseInt(req.params.studentId);
-  const teacherId = parseInt(req.params.teacherId);
+// Schedule lesson (adds to Teachers_Give_Lessons_to_Students)
+router.post('/lesson', async (req, res) => {
+  try {
+    const { teacher_id, student_id, lesson_format, address, instrument, start_time, end_time, date, price } = req.body;
 
-  const index = lessonRequests.findIndex(
-    r => r.student_id === studentId && r.teacher_id === teacherId && r.status === 'pending'
-  );
+    // Get max lesson_id and increment
+    const [maxResult] = await db.query('SELECT MAX(lesson_id) as max_id FROM Teachers_Give_Lessons_to_Students');
+    const lesson_id = (maxResult[0].max_id || 0) + 1;
 
-  if (index === -1) {
-    return res.status(404).json({ error: 'Request not found' });
+    // Use defaults for required fields
+    await db.query(
+      'INSERT INTO Teachers_Give_Lessons_to_Students (lesson_id, teacher_id, student_id, lesson_format, address, instrument, start_time, end_time, date, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        lesson_id, 
+        parseInt(teacher_id), 
+        parseInt(student_id), 
+        lesson_format || 'online', 
+        address || 'TBD', 
+        instrument || 'vocals', 
+        start_time || 'TBD', 
+        end_time || 'TBD', 
+        date || 'TBD', 
+        price || '0'
+      ]
+    );
+
+    res.json({ message: 'Lesson scheduled' });
+  } catch (error) {
+    console.error('Error scheduling lesson:', error);
+    res.status(500).json({ error: 'Failed to schedule lesson' });
   }
-
-  lessonRequests.splice(index, 1);
-  res.json({ message: 'Request cancelled' });
 });
 
-// Show interest in concert
-router.post('/concert', (req, res) => {
-  const { concert_id, user_id } = req.body;
+// Cancel lesson
+router.delete('/lesson/:studentId/:teacherId', async (req, res) => {
+  try {
+    const studentId = parseInt(req.params.studentId);
+    const teacherId = parseInt(req.params.teacherId);
 
-  // Check if interest already exists
-  const existingInterest = concertInterests.find(
-    i => i.concert_id === parseInt(concert_id) && i.user_id === parseInt(user_id)
-  );
+    const [result] = await db.query(
+      'DELETE FROM Teachers_Give_Lessons_to_Students WHERE student_id = ? AND teacher_id = ?',
+      [studentId, teacherId]
+    );
 
-  if (existingInterest) {
-    return res.status(400).json({ error: 'Interest already registered' });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    res.json({ message: 'Lesson cancelled' });
+  } catch (error) {
+    console.error('Error cancelling lesson:', error);
+    res.status(500).json({ error: 'Failed to cancel lesson' });
   }
-
-  const newInterest = {
-    interest_id: concertInterests.length + 1,
-    concert_id: parseInt(concert_id),
-    user_id: parseInt(user_id),
-    created_at: new Date().toISOString().split('T')[0]
-  };
-
-  concertInterests.push(newInterest);
-  res.json(newInterest);
 });
 
-// Remove interest in concert
-router.delete('/concert/:userId/:concertId', (req, res) => {
-  const userId = parseInt(req.params.userId);
-  const concertId = parseInt(req.params.concertId);
+// Show interest in concert (updates User.concert_id)
+router.post('/concert', async (req, res) => {
+  try {
+    const { concert_id, user_id } = req.body;
 
-  const index = concertInterests.findIndex(
-    i => i.user_id === userId && i.concert_id === concertId
-  );
+    await db.query(
+      'UPDATE User SET concert_id = ? WHERE user_id = ?',
+      [parseInt(concert_id), parseInt(user_id)]
+    );
 
-  if (index === -1) {
-    return res.status(404).json({ error: 'Interest not found' });
+    res.json({ message: 'Concert interest updated' });
+  } catch (error) {
+    console.error('Error updating concert interest:', error);
+    res.status(500).json({ error: 'Failed to update concert interest' });
   }
-
-  concertInterests.splice(index, 1);
-  res.json({ message: 'Interest removed' });
 });
 
-// Approve/reject jam session request
-router.put('/jam-session/:requestId', (req, res) => {
-  const requestId = parseInt(req.params.requestId);
-  const { status } = req.body; // 'approved' or 'rejected'
+// Remove concert interest (sets User.concert_id to NULL)
+router.delete('/concert/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
 
-  const request = jamSessionRequests.find(r => r.request_id === requestId);
-  if (!request) {
-    return res.status(404).json({ error: 'Request not found' });
+    await db.query(
+      'UPDATE User SET concert_id = NULL WHERE user_id = ?',
+      [userId]
+    );
+
+    res.json({ message: 'Concert interest removed' });
+  } catch (error) {
+    console.error('Error removing concert interest:', error);
+    res.status(500).json({ error: 'Failed to remove concert interest' });
   }
-
-  request.status = status;
-  res.json(request);
-});
-
-// Approve/reject band request
-router.put('/band/:requestId', (req, res) => {
-  const requestId = parseInt(req.params.requestId);
-  const { status } = req.body;
-
-  const request = bandRequests.find(r => r.request_id === requestId);
-  if (!request) {
-    return res.status(404).json({ error: 'Request not found' });
-  }
-
-  request.status = status;
-  res.json(request);
-});
-
-// Approve/reject lesson request
-router.put('/lesson/:requestId', (req, res) => {
-  const requestId = parseInt(req.params.requestId);
-  const { status } = req.body;
-
-  const request = lessonRequests.find(r => r.request_id === requestId);
-  if (!request) {
-    return res.status(404).json({ error: 'Request not found' });
-  }
-
-  request.status = status;
-  res.json(request);
-});
-
-// Get pending lesson requests for a teacher
-router.get('/lesson/teacher/:teacherId', (req, res) => {
-  const teacherId = parseInt(req.params.teacherId);
-  
-  const requests = lessonRequests
-    .filter(r => r.teacher_id === teacherId)
-    .map(r => ({
-      ...r,
-      student: users.find(u => u.user_id === r.student_id),
-      studentDetails: students.find(s => s.student_id === r.student_id)
-    }));
-
-  res.json(requests);
 });
 
 module.exports = router;

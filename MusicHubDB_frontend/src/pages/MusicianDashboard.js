@@ -78,30 +78,15 @@ function MusicianDashboard() {
     }
   };
 
-  const handleShowConcertInterest = async (concertId) => {
-    try {
-      const hasInterest = hasRequested('concert', concertId);
-      if (hasInterest) {
-        await removeConcertInterest(currentUser.id, concertId);
-      } else {
-        await showConcertInterest({ concert_id: concertId, user_id: currentUser.id });
-      }
-      await fetchData();
-    } catch (err) {
-      console.error('Failed to toggle interest:', err);
-      await fetchData();
-    }
-  };
+  // Concert interests not supported (no tracking table in database)
 
   const hasRequested = (type, id) => {
     if (type === 'jam-session' || type === 'jam') {
-      return myRequests.jamSessions?.some(r => r.jam_id === id && r.status === 'pending') || false;
+      return myRequests.jamSessions?.some(r => r.jam_id === id) || false;
     } else if (type === 'band') {
-      return myRequests.bands?.some(r => r.band_id === id && r.status === 'pending') || false;
-    } else if (type === 'concert') {
-      return myRequests.concerts?.some(r => r.concert_id === id) || false;
+      return myRequests.bands?.some(r => r.band_id === id) || false;
     }
-    return false;
+    return false; // No concert or lesson tracking
   };
 
   if (loading) return <div className="loading">Loading...</div>;
@@ -248,22 +233,6 @@ function MusicianDashboard() {
               <p><strong>Location:</strong> {concert.address}</p>
               <p><strong>Price:</strong> €{concert.price}</p>
               <span className="badge">{concert.genre}</span>
-              <button 
-                onClick={() => handleShowConcertInterest(concert.concert_id)}
-                style={{ 
-                  backgroundColor: hasRequested('concert', concert.concert_id) ? '#ccc' : '#667eea', 
-                  color: 'white', 
-                  padding: '10px', 
-                  border: 'none', 
-                  borderRadius: '5px', 
-                  cursor: 'pointer', 
-                  width: '100%', 
-                  fontWeight: 'bold', 
-                  marginTop: '10px' 
-                }}
-              >
-                {hasRequested('concert', concert.concert_id) ? 'Interest Shown' : 'Show Interest'}
-              </button>
             </div>
           ))}
         </div>

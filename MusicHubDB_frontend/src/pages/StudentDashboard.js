@@ -72,10 +72,11 @@ function StudentDashboard() {
   };
 
   const hasRequested = (type, id) => {
-    if (type === 'teacher') {
-      return myRequests.lessons?.some(r => r.teacher_id === id && r.status === 'pending') || false;
+    if (type === 'lesson' || type === 'teacher') {
+      return myRequests.lessons?.some(r => r.teacher_id === id) || false;
     } else if (type === 'concert') {
-      return myRequests.concerts?.some(r => r.concert_id === id) || false;
+      // Check if user's concert_id matches this concert
+      return currentUser.concert_id === id;
     }
     return false;
   };

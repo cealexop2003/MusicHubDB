@@ -3,11 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { 
   getStudents, 
   getConcerts, 
-  getMyRequests,
-  getTeacherLessonRequests,
-  approveLessonRequest,
-  showConcertInterest,
-  removeConcertInterest
+  getMyRequests
 } from '../services/api';
 
 function TeacherDashboard() {
@@ -26,17 +22,16 @@ function TeacherDashboard() {
 
   const fetchData = async () => {
     try {
-      const [studentsRes, concertsRes, requestsRes, lessonReqRes] = await Promise.all([
+      const [studentsRes, concertsRes, requestsRes] = await Promise.all([
         getStudents(),
         getConcerts(),
-        getMyRequests(currentUser.id),
-        getTeacherLessonRequests(currentUser.id)
+        getMyRequests(currentUser.id)
       ]);
       
       setStudents(studentsRes.data);
       setConcerts(concertsRes.data);
       setMyRequests(requestsRes.data);
-      setLessonRequests(lessonReqRes.data);
+      setLessonRequests([]); // No lesson request tracking
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -44,30 +39,7 @@ function TeacherDashboard() {
     }
   };
 
-  const handleApproveLesson = async (requestId, status) => {
-    try {
-      await approveLessonRequest(requestId, status);
-      await fetchData();
-    } catch (err) {
-      console.error('Failed to update request:', err);
-      await fetchData();
-    }
-  };
-
-  const handleShowConcertInterest = async (concertId) => {
-    try {
-      const hasInterest = hasRequested('concert', concertId);
-      if (hasInterest) {
-        await removeConcertInterest(currentUser.id, concertId);
-      } else {
-        await showConcertInterest({ concert_id: concertId, user_id: currentUser.id });
-      }
-      await fetchData();
-    } catch (err) {
-      console.error('Failed to toggle interest:', err);
-      await fetchData();
-    }
-  };
+  // No concert or lesson request handling (no tracking tables)
 
   const hasRequested = (type, id) => {
     if (type === 'concert') {
@@ -100,7 +72,7 @@ function TeacherDashboard() {
             marginBottom: '-3px'
           }}
         >
-          Lesson Requests ({lessonRequests.filter(r => r.status === 'pending').length})
+          Lesson Requests (0)
         </button>
         <button
           onClick={() => setActiveTab('students')}
@@ -132,58 +104,30 @@ function TeacherDashboard() {
         >
           Concerts
         </button>
+        <button
+          onClick={() => setActiveTab('my-interests')}
+          style={{
+            padding: '15px 30px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: activeTab === 'my-interests' ? 'white' : 'rgba(255,255,255,0.6)',
+            fontWeight: activeTab === 'my-interests' ? 'bold' : 'normal',
+            cursor: 'pointer',
+            borderBottom: activeTab === 'my-interests' ? '3px solid white' : '3px solid transparent',
+            marginBottom: '-3px'
+          }}
+        >
+          My Concert Interests
+        </button>
       </div>
 
       {/* Lesson Requests Tab */}
       {activeTab === 'lesson-requests' && (
         <div>
           <h2 style={{ color: 'white', marginBottom: '20px' }}>Pending Lesson Requests</h2>
-          {lessonRequests.filter(r => r.status === 'pending').length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginTop: '50px', fontSize: '16px' }}>No pending requests</p>
-          ) : (
-            <div className="card-grid">
-              {lessonRequests.filter(r => r.status === 'pending').map(req => (
-                <div key={req.request_id} className="card">
-                  <h3>{req.student?.name}</h3>
-                  <p><strong>Age:</strong> {req.student?.age}</p>
-                  <p><strong>Preferred Format:</strong> {req.studentDetails?.lesson_format}</p>
-                  <p><strong>Requested on:</strong> {req.created_at}</p>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                    <button 
-                      onClick={() => handleApproveLesson(req.request_id, 'approved')}
-                      style={{ flex: 1, backgroundColor: '#4CAF50', color: 'white', padding: '10px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
-                    >
-                      Approve
-                    </button>
-                    <button 
-                      onClick={() => handleApproveLesson(req.request_id, 'rejected')}
-                      style={{ flex: 1, backgroundColor: '#f44336', color: 'white', padding: '10px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {lessonRequests.length > 0 && (
-            <>
-              <h2 style={{ marginTop: '50px', color: 'white', marginBottom: '20px' }}>All Requests</h2>
-              <div className="card-grid">
-                {lessonRequests.map(req => (
-                  <div key={req.request_id} className="card">
-                    <h3>{req.student?.name}</h3>
-                    <p><strong>Age:</strong> {req.student?.age}</p>
-                    <p><strong>Requested on:</strong> {req.created_at}</p>
-                    <span className={`badge ${req.status === 'pending' ? 'badge-pending' : req.status === 'approved' ? 'badge-approved' : 'badge-rejected'}`}>
-                      {req.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginTop: '50px', fontSize: '16px' }}>
+            No lesson request tracking system available
+          </p>
         </div>
       )}
 
@@ -213,24 +157,18 @@ function TeacherDashboard() {
               <p><strong>Location:</strong> {concert.address}</p>
               <p><strong>Price:</strong> €{concert.price}</p>
               <span className="badge">{concert.genre}</span>
-              <button 
-                onClick={() => handleShowConcertInterest(concert.concert_id)}
-                style={{ 
-                  backgroundColor: hasRequested('concert', concert.concert_id) ? '#ccc' : '#667eea', 
-                  color: 'white', 
-                  padding: '10px', 
-                  border: 'none', 
-                  borderRadius: '5px', 
-                  cursor: 'pointer', 
-                  width: '100%', 
-                  fontWeight: 'bold', 
-                  marginTop: '10px' 
-                }}
-              >
-                {hasRequested('concert', concert.concert_id) ? 'Interest Shown' : 'Show Interest'}
-              </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* My Concert Interests Tab */}
+      {activeTab === 'my-interests' && (
+        <div>
+          <h2 style={{ color: 'white', marginBottom: '20px' }}>My Concert Interests</h2>
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginTop: '80px', fontSize: '18px' }}>
+            No concert interest tracking available
+          </p>
         </div>
       )}
     </div>

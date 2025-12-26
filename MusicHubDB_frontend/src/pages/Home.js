@@ -24,7 +24,7 @@ function Home() {
       {!isAuthenticated && (
         <>
           <div className="home-hero">
-            <h1>🎵 Welcome to MusicHubDB</h1>
+            <h1>🎵 Welcome to MusicHub</h1>
             <p>Your Complete Music Community Platform</p>
           </div>
 
@@ -37,8 +37,8 @@ function Home() {
             borderRadius: '12px',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
           }}>
-            <h2 style={{ color: '#667eea', marginBottom: '20px' }}>Join MusicHubDB Today</h2>
-            <p style={{ color: '#666', marginBottom: '30px', lineHeight: '1.6' }}>
+          <h2 style={{ color: '#667eea', marginBottom: '20px' }}>Join MusicHub Today</h2>
+          <p style={{ color: '#666', marginBottom: '30px', lineHeight: '1.6' }}>
               Connect with musicians, find teachers, join bands, attend jam sessions, and discover concerts.
               Sign up or login to get started!
             </p>

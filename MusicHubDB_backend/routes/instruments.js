@@ -1,44 +1,59 @@
 const express = require('express');
 const router = express.Router();
-const { instruments, users } = require('../data/mockData');
+const db = require('../config/db');
 
 // GET all instruments
-router.get('/', (req, res) => {
-  const instrumentsWithOwners = instruments.map(instrument => {
-    const owner = users.find(u => u.user_id === instrument.user_id);
+router.get('/', async (req, res) => {
+  try {
+    const [instruments] = await db.query(`
+      SELECT i.*, u.name as owner_name
+      FROM Instrument i
+      LEFT JOIN User u ON i.user_id = u.user_id
+    `);
     
-    return {
-      ...instrument,
-      owner_name: owner?.name
-    };
-  });
-  
-  res.json(instrumentsWithOwners);
+    res.json(instruments);
+  } catch (error) {
+    console.error('Error fetching instruments:', error);
+    res.status(500).json({ error: 'Failed to fetch instruments' });
+  }
 });
 
 // GET instrument by ID
-router.get('/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const instrument = instruments.find(i => i.instrument_id === id);
-  
-  if (!instrument) {
-    return res.status(404).json({ error: 'Instrument not found' });
+router.get('/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [instruments] = await db.query(`
+      SELECT i.*, u.name as owner_name
+      FROM Instrument i
+      LEFT JOIN User u ON i.user_id = u.user_id
+      WHERE i.instrument_id = ?
+    `, [id]);
+    
+    if (instruments.length === 0) {
+      return res.status(404).json({ error: 'Instrument not found' });
+    }
+    
+    res.json(instruments[0]);
+  } catch (error) {
+    console.error('Error fetching instrument:', error);
+    res.status(500).json({ error: 'Failed to fetch instrument' });
   }
-  
-  const owner = users.find(u => u.user_id === instrument.user_id);
-  
-  res.json({
-    ...instrument,
-    owner_name: owner?.name
-  });
 });
 
 // GET instruments by user ID
-router.get('/user/:userId', (req, res) => {
-  const userId = parseInt(req.params.userId);
-  const userInstruments = instruments.filter(i => i.user_id === userId);
-  
-  res.json(userInstruments);
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const [instruments] = await db.query(
+      'SELECT * FROM Instrument WHERE user_id = ?',
+      [userId]
+    );
+    
+    res.json(instruments);
+  } catch (error) {
+    console.error('Error fetching user instruments:', error);
+    res.status(500).json({ error: 'Failed to fetch instruments' });
+  }
 });
 
 // POST create new instrument

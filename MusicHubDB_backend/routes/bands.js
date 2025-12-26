@@ -1,27 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const { bands, bandsHaveMusicians, musicians, users } = require('../data/mockData');
+const db = require('../config/db');
 
 // GET all bands
-router.get('/', (req, res) => {
-  const bandsWithMembers = bands.map(band => {
-    const memberIds = bandsHaveMusicians
-      .filter(bm => bm.band_id === band.band_id)
-      .map(bm => bm.musician_id);
+router.get('/', async (req, res) => {
+  try {
+    const [bands] = await db.query('SELECT * FROM Band');
     
-    const members = memberIds.map(musicianId => {
-      const musician = musicians.find(m => m.musician_id === musicianId);
-      const user = users.find(u => u.user_id === musicianId);
-      return { ...musician, ...user };
-    });
+    // For each band, get members
+    const bandsWithMembers = await Promise.all(
+      bands.map(async (band) => {
+        const [members] = await db.query(`
+          SELECT u.*, m.experience, m.genre
+          FROM Bands_Have_Musicians bm
+          JOIN User u ON bm.musician_id = u.user_id
+          JOIN Musician m ON bm.musician_id = m.musician_id
+          WHERE bm.band_id = ?
+        `, [band.band_id]);
+        
+        return {
+          ...band,
+          members
+        };
+      })
+    );
     
-    return {
-      ...band,
-      members
-    };
-  });
-  
-  res.json(bandsWithMembers);
+    res.json(bandsWithMembers);
+  } catch (error) {
+    console.error('Error fetching bands:', error);
+    res.status(500).json({ error: 'Failed to fetch bands' });
+  }
 });
 
 // GET band by ID

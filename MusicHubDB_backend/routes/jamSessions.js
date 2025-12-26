@@ -1,27 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const { jamSessions, jamSessionsHaveMusicians, musicians, users } = require('../data/mockData');
+const db = require('../config/db');
 
 // GET all jam sessions
-router.get('/', (req, res) => {
-  const jamSessionsWithParticipants = jamSessions.map(session => {
-    const participantIds = jamSessionsHaveMusicians
-      .filter(jm => jm.jam_id === session.jam_id)
-      .map(jm => jm.musician_id);
+router.get('/', async (req, res) => {
+  try {
+    const [jamSessions] = await db.query('SELECT * FROM `Jam-Session`');
     
-    const participants = participantIds.map(musicianId => {
-      const musician = musicians.find(m => m.musician_id === musicianId);
-      const user = users.find(u => u.user_id === musicianId);
-      return { ...musician, ...user };
-    });
+    // For each jam session, get participants
+    const jamSessionsWithParticipants = await Promise.all(
+      jamSessions.map(async (session) => {
+        const [participants] = await db.query(`
+          SELECT u.*, m.experience, m.genre
+          FROM \`Jam-Sessions_Have_Musicians\` jm
+          JOIN User u ON jm.musician_id = u.user_id
+          JOIN Musician m ON jm.musician_id = m.musician_id
+          WHERE jm.jam_id = ?
+        `, [session.jam_id]);
+        
+        return {
+          ...session,
+          participants
+        };
+      })
+    );
     
-    return {
-      ...session,
-      participants
-    };
-  });
-  
-  res.json(jamSessionsWithParticipants);
+    res.json(jamSessionsWithParticipants);
+  } catch (error) {
+    console.error('Error fetching jam sessions:', error);
+    res.status(500).json({ error: 'Failed to fetch jam sessions' });
+  }
 });
 
 // GET jam session by ID

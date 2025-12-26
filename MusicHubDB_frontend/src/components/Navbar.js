@@ -25,7 +25,7 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-content">
         <Link to="/" className="navbar-brand">
-          🎵 MusicHubDB
+          🎵 MusicHub
         </Link>
         
         {isAuthenticated ? (
