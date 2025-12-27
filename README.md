@@ -6,6 +6,31 @@ A full-stack music community application with MySQL database, Node.js/Express ba
 
 MusicHub connects musicians, teachers, and students in one platform. Musicians can join jam sessions and bands, teachers can manage lesson requests, and students can request lessons and update their instrument profiles. All data is stored in a MySQL database with real-time updates.
 
+## Key Features
+
+**Musician Dashboard:**
+- Join/leave jam sessions with live participant count updates
+- View jam session participants in modal popup
+- Join/leave bands with member count updates
+- Browse concerts
+
+**Teacher Dashboard:**
+- View lesson requests from students
+- Edit lesson details (format, instrument, address, date, time, price)
+- Browse students and concerts
+
+**Student Dashboard:**
+- Request lessons from teachers
+- Edit instrument profile (type and name)
+- Browse teachers and concerts
+
+**Technical Features:**
+- MySQL database integration with mysql2
+- Name-based authentication (no password required)
+- Real-time database updates
+- RESTful API with Express
+- React frontend with routing
+
 ## Prerequisites
 
 Make sure you have installed:
@@ -20,8 +45,11 @@ Make sure you have installed:
 # Navigate to backend folder
 cd MusicHubDB_backend
 
-# Install dependencies (includes mysql2 for database connection)
+# Install dependencies
 npm install
+
+# Install MySQL driver
+npm install mysql2
 
 # Start the backend server
 npm start
@@ -37,7 +65,7 @@ Open a new terminal and run:
 # Navigate to frontend folder
 cd MusicHubDB_frontend
 
-# Install dependencies
+# Install dependencies (includes react, react-router-dom, axios)
 npm install
 
 # Start the React app
