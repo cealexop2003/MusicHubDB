@@ -1,42 +1,45 @@
 const express = require('express');
 const router = express.Router();
-const { concerts, bands, musicians, users } = require('../data/mockData');
+const db = require('../config/db');
 
 // GET all concerts
-router.get('/', (req, res) => {
-  const concertsWithDetails = concerts.map(concert => {
-    const band = bands.find(b => b.band_id === concert.band_id);
-    const musician = musicians.find(m => m.musician_id === concert.musician_id);
-    const user = users.find(u => u.user_id === concert.musician_id);
+router.get('/', async (req, res) => {
+  try {
+    const [concerts] = await db.query(`
+      SELECT c.*, b.name as band_name, u.name as musician_name
+      FROM CONCERT c
+      LEFT JOIN Band b ON c.band_id = b.band_id
+      LEFT JOIN User u ON c.musician_id = u.user_id
+    `);
     
-    return {
-      ...concert,
-      band_name: band?.name,
-      musician_name: user?.name
-    };
-  });
-  
-  res.json(concertsWithDetails);
+    res.json(concerts);
+  } catch (error) {
+    console.error('Error fetching concerts:', error);
+    res.status(500).json({ error: 'Failed to fetch concerts' });
+  }
 });
 
 // GET concert by ID
-router.get('/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const concert = concerts.find(c => c.concert_id === id);
-  
-  if (!concert) {
-    return res.status(404).json({ error: 'Concert not found' });
+router.get('/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [concerts] = await db.query(`
+      SELECT c.*, b.name as band_name, u.name as musician_name
+      FROM CONCERT c
+      LEFT JOIN Band b ON c.band_id = b.band_id
+      LEFT JOIN User u ON c.musician_id = u.user_id
+      WHERE c.concert_id = ?
+    `, [id]);
+    
+    if (concerts.length === 0) {
+      return res.status(404).json({ error: 'Concert not found' });
+    }
+    
+    res.json(concerts[0]);
+  } catch (error) {
+    console.error('Error fetching concert:', error);
+    res.status(500).json({ error: 'Failed to fetch concert' });
   }
-  
-  const band = bands.find(b => b.band_id === concert.band_id);
-  const musician = musicians.find(m => m.musician_id === concert.musician_id);
-  const user = users.find(u => u.user_id === concert.musician_id);
-  
-  res.json({
-    ...concert,
-    band_name: band?.name,
-    musician_name: user?.name
-  });
 });
 
 // POST create new concert

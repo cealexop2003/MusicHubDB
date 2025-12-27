@@ -1,28 +1,55 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, userRole, currentUser, logout } = useAuth();
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Hide navbar on login/signup pages
+  if (location.pathname === '/login' || location.pathname === '/signup') {
+    return null;
+  }
+
   return (
     <nav className="navbar">
       <div className="navbar-content">
         <Link to="/" className="navbar-brand">
-          🎵 MusicHubDB
+          🎵 MusicHub
         </Link>
-        <ul className="navbar-links">
-          <li><Link to="/" className={isActive('/')}>Home</Link></li>
-          <li><Link to="/musicians" className={isActive('/musicians')}>Musicians</Link></li>
-          <li><Link to="/bands" className={isActive('/bands')}>Bands</Link></li>
-          <li><Link to="/concerts" className={isActive('/concerts')}>Concerts</Link></li>
-          <li><Link to="/jam-sessions" className={isActive('/jam-sessions')}>Jam Sessions</Link></li>
-          <li><Link to="/teachers" className={isActive('/teachers')}>Teachers</Link></li>
-          <li><Link to="/students" className={isActive('/students')}>Students</Link></li>
-        </ul>
+        
+        {isAuthenticated ? (
+          // Authenticated - only show user name and logout
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginLeft: 'auto' }}>
+            <span style={{ color: '#333', fontWeight: 'bold' }}>
+              {currentUser?.name}
+            </span>
+            <button 
+              onClick={handleLogout}
+              style={{ 
+                backgroundColor: '#f44336', 
+                color: 'white', 
+                border: 'none', 
+                padding: '8px 16px', 
+                borderRadius: '5px', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        ) : null}
       </div>
     </nav>
   );

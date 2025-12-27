@@ -1,21 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const { students, users, lessons, teachers } = require('../data/mockData');
+const db = require('../config/db');
 
 // GET all students
-router.get('/', (req, res) => {
-  const studentsWithDetails = students.map(student => {
-    const user = users.find(u => u.user_id === student.student_id);
-    const studentLessons = lessons.filter(l => l.student_id === student.student_id);
+router.get('/', async (req, res) => {
+  try {
+    const [students] = await db.query(`
+      SELECT s.*, u.name, u.age, u.address
+      FROM Student s
+      JOIN User u ON s.student_id = u.user_id
+    `);
     
-    return {
-      ...student,
-      ...user,
-      lessons: studentLessons
-    };
-  });
-  
-  res.json(studentsWithDetails);
+    // For each student, get lessons
+    const studentsWithDetails = await Promise.all(
+      students.map(async (student) => {
+        const [lessons] = await db.query(`
+          SELECT * FROM Teachers_Give_Lessons_to_Students WHERE student_id = ?
+        `, [student.student_id]);
+        
+        return {
+          ...student,
+          lessons
+        };
+      })
+    );
+    
+    res.json(studentsWithDetails);
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
 });
 
 // GET student by ID

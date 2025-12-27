@@ -1,172 +1,90 @@
-# MusicHubDB - Full Stack Application
+# MusicHubDB - Music Community Platform
 
-A music community platform built with Node.js/Express backend and React frontend.
+A full-stack music community application with MySQL database, Node.js/Express backend, and React frontend.
 
-## Project Structure
+## Overview
 
-```
-MusicHubDB_project/
-├── MusicHubDB_backend/      # Node.js/Express API
-│   ├── data/                # Mock data
-│   ├── routes/              # API routes
-│   ├── server.js            # Entry point
-│   └── package.json
-│
-└── MusicHubDB_frontend/     # React application
-    ├── public/
-    ├── src/
-    │   ├── components/      # Reusable components
-    │   ├── pages/           # Page components
-    │   ├── services/        # API service
-    │   └── App.js
-    └── package.json
-```
+MusicHub connects musicians, teachers, and students in one platform. Musicians can join jam sessions and bands, teachers can manage lesson requests, and students can request lessons and update their instrument profiles. All data is stored in a MySQL database with real-time updates.
 
-## Features
+## Key Features
 
-### Core Functionality
-- 🎸 **Musicians**: Browse profiles, instruments, and band affiliations
-- 🎤 **Bands**: View bands and their members
-- 🎪 **Concerts**: Explore upcoming concerts and events
-- 🎹 **Jam Sessions**: Find local jam sessions
-- 👨‍🏫 **Teachers**: Connect with music instructors
-- 🎓 **Students**: View students and their lessons
+**Musician Dashboard:**
+- Join/leave jam sessions with live participant count updates
+- View jam session participants in modal popup
+- Join/leave bands with member count updates
+- Browse concerts
+
+**Teacher Dashboard:**
+- View lesson requests from students
+- Edit lesson details (format, instrument, address, date, time, price)
+- Browse students and concerts
+
+**Student Dashboard:**
+- Request lessons from teachers
+- Edit instrument profile (type and name)
+- Browse teachers and concerts
+
+**Technical Features:**
+- MySQL database integration with mysql2
+- Name-based authentication (no password required)
+- Real-time database updates
+- RESTful API with Express
+- React frontend with routing
+
+## Prerequisites
+
+Make sure you have installed:
+- **Node.js** (v14 or higher)
+- **MySQL** (v8.0 or higher) with the MusicHubDB database already set up
 
 ## Setup Instructions
 
-### Backend Setup
+### 1. Backend Setup
 
-1. Navigate to the backend folder:
 ```bash
+# Navigate to backend folder
 cd MusicHubDB_backend
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Start the server:
-```bash
-# Development mode (with auto-restart)
-npm run dev
-
-# Or production mode
-npm start
-```
-
-The backend will run on `http://localhost:5000`
-
-### Frontend Setup
-
-1. Open a new terminal and navigate to the frontend folder:
-```bash
-cd MusicHubDB_frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the React app:
-```bash
-npm start
-```
-
-The frontend will run on `http://localhost:3000`
-
-## Testing the Application
-
-1. **Start the backend** first (port 5000)
-2. **Start the frontend** (port 3000)
-3. **Open your browser** to `http://localhost:3000`
-4. **Navigate** through the different sections using the navbar
-
-### API Endpoints Available
-
-- `GET /api/musicians` - All musicians
-- `GET /api/musicians/:id` - Musician details
-- `GET /api/bands` - All bands
-- `GET /api/bands/:id` - Band details
-- `GET /api/concerts` - All concerts
-- `GET /api/concerts/:id` - Concert details
-- `GET /api/jam-sessions` - All jam sessions
-- `GET /api/jam-sessions/:id` - Jam session details
-- `GET /api/teachers` - All teachers
-- `GET /api/students` - All students
-
-## Current Status
-
-✅ Backend REST API with Express
-✅ Frontend React application with routing
-✅ Mock data based on your database schema
-✅ Full CRUD endpoints (using mock data)
-✅ Responsive UI with modern styling
-✅ Navigation between all pages
-
-⏳ **Not Yet Connected**: MySQL database (next phase)
-
-## Next Steps
-
-When ready to connect to the actual MySQL database:
-
-1. Install MySQL driver in backend:
-```bash
-cd MusicHubDB_backend
+# Install MySQL driver
 npm install mysql2
+
+# Start the backend server
+npm start
 ```
 
-2. Create database connection module
-3. Replace mock data with actual SQL queries
-4. Test with your `musichubdbdump.sql` database
+✅ Backend runs on: **http://localhost:5001**
 
-## Technologies Used
+### 2. Frontend Setup
 
-### Backend
-- Node.js
-- Express.js
-- CORS
-- dotenv
+Open a new terminal and run:
 
-### Frontend
-- React 18
-- React Router DOM
-- Axios
-- Modern CSS
+```bash
+# Navigate to frontend folder
+cd MusicHubDB_frontend
 
-## Environment Variables
+# Install dependencies (includes react, react-router-dom, axios)
+npm install
 
-### Backend (.env)
-```
-PORT=5000
-DB_HOST=localhost
-DB_USER=app_admin
-DB_PASSWORD=superpass
-DB_NAME=MusicHubDB
+# Start the React app
+npm start
 ```
 
-### Frontend (.env)
-```
-REACT_APP_API_URL=http://localhost:5000/api
-```
+✅ Frontend runs on: **http://localhost:3000**
 
-## Troubleshooting
+The app will automatically open in your browser at http://localhost:3000
 
-**Backend won't start?**
-- Make sure you ran `npm install` in the backend folder
-- Check if port 5000 is available
+## Login
 
-**Frontend shows errors?**
-- Make sure backend is running first
-- Check if `npm install` completed successfully in frontend folder
-- Verify the API URL in frontend `.env` file
+- Click "Login" or "Sign Up"
+- Enter any name that exists in your database
+- No password required
 
-**Can't see data?**
-- Verify backend is running on port 5000
-- Open browser console to see any errors
-- Check Network tab to see API calls
+## Database Configuration
 
-## License
-
-This is a university project for learning database connectivity.
+Default credentials (change in `MusicHubDB_backend/config/db.js` if needed):
+- **User:** app_admin
+- **Password:** superpass
+- **Database:** MusicHubDB
