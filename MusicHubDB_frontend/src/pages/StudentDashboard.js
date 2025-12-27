@@ -161,6 +161,7 @@ function StudentDashboard() {
               <p><strong>Age:</strong> {teacher.age}</p>
               <p><strong>Experience:</strong> {teacher.experience} years</p>
               <p><strong>Certification:</strong> {teacher.certification === 1 ? 'Certified' : 'Not Certified'}</p>
+              <p><strong>Instrument:</strong> {teacher.instrument_name ? teacher.instrument_name.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'N/A'}</p>
               <p><strong>Format:</strong> {teacher.lesson_format}</p>
               <p><strong>Hourly Rate:</strong> €{teacher.hourly_wage}</p>
               <button 

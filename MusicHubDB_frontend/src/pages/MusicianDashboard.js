@@ -175,7 +175,7 @@ function MusicianDashboard() {
               style={{ cursor: 'pointer', position: 'relative' }}
               onClick={() => handleViewJamSession(session.jam_id)}
             >
-              <div style={{ position: 'absolute', top: '2px', right: '5px', fontSize: '32px', color: '#667eea', fontWeight: 'bold' }}>
+              <div style={{ position: 'absolute', top: '0px', right: '8px', fontSize: '32px', color: '#667eea', fontWeight: 'bold' }}>
                 ⤢
               </div>
               <h3>{session.genre} Jam Session</h3>

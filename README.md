@@ -1,102 +1,166 @@
-# MusicHubDB - Full Stack Application
+# MusicHubDB - Music Community Platform
 
-A music community platform built with Node.js/Express backend and React frontend.
+A full-stack music community application with MySQL database, Node.js/Express backend, and React frontend.
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+- **Node.js** (v14 or higher) - [Download here](https://nodejs.org/)
+- **MySQL** (v8.0 or higher) - [Download here](https://dev.mysql.com/downloads/)
+- **npm** (comes with Node.js)
 
 ## Project Structure
 
 ```
 MusicHubDB_project/
-├── MusicHubDB_backend/      # Node.js/Express API
-│   ├── data/                # Mock data
-│   ├── routes/              # API routes
-│   ├── server.js            # Entry point
-│   └── package.json
-│
-└── MusicHubDB_frontend/     # React application
-    ├── public/
-    ├── src/
-    │   ├── components/      # Reusable components
-    │   ├── pages/           # Page components
-    │   ├── services/        # API service
-    │   └── App.js
-    └── package.json
+├── MusicHubDB_backend/      # Node.js/Express API (Port 5001)
+└── MusicHubDB_frontend/     # React application (Port 3000)
+```
+
+## Quick Start Guide
+
+### 1. Database Setup
+
+First, set up your MySQL database:
+
+```bash
+# Login to MySQL
+mysql -u root -p
+
+# Create the database (if not already created)
+CREATE DATABASE MusicHubDB;
+
+# Create a user for the application
+CREATE USER 'app_admin'@'localhost' IDENTIFIED BY 'superpass';
+GRANT ALL PRIVILEGES ON MusicHubDB.* TO 'app_admin'@'localhost';
+FLUSH PRIVILEGES;
+
+# Exit MySQL
+exit;
+```
+
+**Note:** The database schema should already be set up with all necessary tables (User, Musician, Teacher, Student, Band, Concert, Jam-Session, Instrument, etc.). If not, import your SQL schema file.
+
+### 2. Backend Setup
+
+```bash
+# Navigate to backend folder
+cd MusicHubDB_backend
+
+# Install dependencies
+npm install
+
+# Start the backend server
+npm start
+```
+
+✅ Backend will run on: **http://localhost:5001**
+
+### 3. Frontend Setup
+
+Open a **new terminal window** and run:
+
+```bash
+# Navigate to frontend folder
+cd MusicHubDB_frontend
+
+# Install dependencies
+npm install
+
+# Start the React app
+npm start
+```
+
+✅ Frontend will run on: **http://localhost:3000**
+
+The app should automatically open in your browser. If not, navigate to http://localhost:3000
+
+## Using the Application
+
+### Login
+
+The app uses **name-only authentication** (no password required):
+
+1. Go to http://localhost:3000
+2. Click "Login" or "Sign Up"
+3. Enter a name that exists in your database
+4. You'll be redirected to the appropriate dashboard based on your role
+
+### Available Dashboards
+
+**🎸 Musician Dashboard**
+- Join/leave jam sessions (with participant modal view)
+- Join/leave bands
+- View concerts
+
+**👨‍🏫 Teacher Dashboard**
+- View and edit lesson requests
+- Update lesson details (format, instrument, address, date, time, price)
+- View students and concerts
+
+**🎓 Student Dashboard**
+- Request lessons from teachers
+- Edit instrument profile (type and name)
+- View concerts
+
+## Database Configuration
+
+The app connects to MySQL with these credentials (edit in `MusicHubDB_backend/config/db.js` if needed):
+
+```javascript
+Host: localhost
+User: app_admin
+Password: superpass
+Database: MusicHubDB
+Port: 3306
 ```
 
 ## Features
 
-### Core Functionality
-- 🎸 **Musicians**: Browse profiles, instruments, and band affiliations
-- 🎤 **Bands**: View bands and their members
-- 🎪 **Concerts**: Explore upcoming concerts and events
-- 🎹 **Jam Sessions**: Find local jam sessions
-- 👨‍🏫 **Teachers**: Connect with music instructors
-- 🎓 **Students**: View students and their lessons
+- ✅ MySQL database integration
+- ✅ Name-only authentication
+- ✅ Musician jam session & band management
+- ✅ Teacher lesson request editing
+- ✅ Student lesson requests & instrument profile
+- ✅ Interactive jam session participant modal
+- ✅ Real-time database updates for joins/leaves
+- ✅ Concert viewing (read-only)
 
-## Setup Instructions
+## Troubleshooting
 
-### Backend Setup
+**Backend won't start:**
+- Check if MySQL is running: `mysql -u app_admin -psuperpass`
+- Verify database exists: `SHOW DATABASES;`
+- Check if port 5001 is available
 
-1. Navigate to the backend folder:
-```bash
-cd MusicHubDB_backend
-```
+**Frontend won't start:**
+- Check if port 3000 is available
+- Clear node_modules and reinstall: `rm -rf node_modules && npm install`
 
-2. Install dependencies:
-```bash
-npm install
-```
+**Database connection error:**
+- Verify MySQL credentials in `MusicHubDB_backend/config/db.js`
+- Ensure user `app_admin` has proper privileges
 
-3. Start the server:
-```bash
-# Development mode (with auto-restart)
-npm run dev
+**Can't login:**
+- Make sure your name exists in the User table
+- Check browser console for errors
 
-# Or production mode
-npm start
-```
+## Tech Stack
 
-The backend will run on `http://localhost:5000`
+- **Frontend:** React, Axios
+- **Backend:** Node.js, Express
+- **Database:** MySQL (mysql2 driver)
+- **Authentication:** Name-based (simplified)
 
-### Frontend Setup
+## Port Configuration
 
-1. Open a new terminal and navigate to the frontend folder:
-```bash
-cd MusicHubDB_frontend
-```
+- Backend API: **5001**
+- Frontend React: **3000**
+- MySQL: **3306**
 
-2. Install dependencies:
-```bash
-npm install
-```
+---
 
-3. Start the React app:
-```bash
-npm start
-```
-
-The frontend will run on `http://localhost:3000`
-
-## Testing the Application
-
-1. **Start the backend** first (port 5000)
-2. **Start the frontend** (port 3000)
-3. **Open your browser** to `http://localhost:3000`
-4. **Navigate** through the different sections using the navbar
-
-### API Endpoints Available
-
-- `GET /api/musicians` - All musicians
-- `GET /api/musicians/:id` - Musician details
-- `GET /api/bands` - All bands
-- `GET /api/bands/:id` - Band details
-- `GET /api/concerts` - All concerts
-- `GET /api/concerts/:id` - Concert details
-- `GET /api/jam-sessions` - All jam sessions
-- `GET /api/jam-sessions/:id` - Jam session details
-- `GET /api/teachers` - All teachers
-- `GET /api/students` - All students
-
-## Current Status
+**Need help?** Check the browser console (F12) and backend terminal for error messages.
 
 ✅ Backend REST API with Express
 ✅ Frontend React application with routing

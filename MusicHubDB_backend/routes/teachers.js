@@ -6,9 +6,10 @@ const db = require('../config/db');
 router.get('/', async (req, res) => {
   try {
     const [teachers] = await db.query(`
-      SELECT t.*, u.name, u.age, u.address
+      SELECT t.*, u.name, u.age, u.address, i.type as instrument_type, i.name as instrument_name
       FROM Teacher t
       JOIN User u ON t.teacher_id = u.user_id
+      LEFT JOIN Instrument i ON t.teacher_id = i.user_id
     `);
     
     // For each teacher, get lessons
