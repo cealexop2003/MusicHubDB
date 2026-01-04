@@ -35,7 +35,7 @@ MusicHub connects musicians, teachers, and students in one platform. Musicians c
 
 Make sure you have installed:
 - **Node.js** (v14 or higher)
-- **MySQL** (v8.0 or higher) with the MusicHubDB database already set up
+- **MySQL** (v8.0 or higher) with the MusicHubDB database and the users already set up
 
 ## Setup Instructions
 
