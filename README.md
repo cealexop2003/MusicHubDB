@@ -35,7 +35,7 @@ MusicHub connects musicians, teachers, and students in one platform. Musicians c
 
 Make sure you have installed:
 - **Node.js** (v14 or higher)
-- **MySQL** (v8.0 or higher) with the MusicHubDB database and the users already set up
+- **MySQL** (v8.0 or higher) with the MusicHubDB database already set up
 
 ## Setup Instructions
 
@@ -79,8 +79,9 @@ The app will automatically open in your browser at http://localhost:3000
 ## Login
 
 - Click "Login" or "Sign Up"
-- Enter any name that exists in your database
+- Enter any name that exists in your database for login
 - No password required
+- Can also create new users through "Sign Up" and later login with these newly created users
 
 ## Database Configuration
 
